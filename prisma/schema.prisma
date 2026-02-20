@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Thread {
+  id         String    @id @default(cuid())
+  igThreadId String    @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  messages   Message[]
+}
+
+model Message {
+  id                 String           @id @default(cuid())
+  igMessageId        String           @unique
+  threadId           String
+  senderIgId         String
+  direction          MessageDirection
+  text               String?
+  receivedAt         DateTime         @default(now())
+  intent             String?
+  confidence         Float?
+  needsHumanApproval Boolean          @default(false)
+  suggestedReply     String?
+  thread             Thread           @relation(fields: [threadId], references: [id])
+  deliveryLogs       DeliveryLog[]
+}
+
+model DeliveryLog {
+  id        String   @id @default(cuid())
+  messageId String
+  status    String
+  error     String?
+  latencyMs Int?
+  createdAt DateTime @default(now())
+  message   Message  @relation(fields: [messageId], references: [id])
+}
+
+model RawEvent {
+  id          String   @id @default(cuid())
+  igMessageId String   @unique
+  payload     Json
+  receivedAt  DateTime @default(now())
+}
+
+enum MessageDirection {
+  IN
+  OUT
+}
