@@ -1,0 +1,78 @@
+{
+  "generatedAt": "2026-02-21T22:15:24.590Z",
+  "preset": "resume",
+  "results": [
+    {
+      "name": "baseline",
+      "requests": 500,
+      "concurrency": 25,
+      "queueConcurrency": 1,
+      "workerDelayMs": 0,
+      "successes": 500,
+      "failures": 0,
+      "successRate": 1,
+      "ackLatencyMs": {
+        "min": 1.3126660000000356,
+        "p50": 4.519228999999939,
+        "p95": 33.548970499999946,
+        "p99": 58.00016134000001,
+        "max": 68.520917,
+        "avg": 7.368877267999998
+      },
+      "dispatchDurationMs": 167.04649999999998,
+      "totalDurationMs": 167.103542,
+      "queueDrainAfterDispatchMs": 0.05704200000002402,
+      "ackThroughputRps": 2993.1785460934534,
+      "fullyProcessed": true,
+      "processedJobs": 500
+    },
+    {
+      "name": "burst",
+      "requests": 2000,
+      "concurrency": 100,
+      "queueConcurrency": 1,
+      "workerDelayMs": 0,
+      "successes": 2000,
+      "failures": 0,
+      "successRate": 1,
+      "ackLatencyMs": {
+        "min": 0.7372080000000096,
+        "p50": 6.789770999999973,
+        "p95": 72.60206074999986,
+        "p99": 261.56105291000006,
+        "max": 298.61362499999996,
+        "avg": 16.646298249000004
+      },
+      "dispatchDurationMs": 340.6175830000001,
+      "totalDurationMs": 340.6209580000001,
+      "queueDrainAfterDispatchMs": 0.003375000000005457,
+      "ackThroughputRps": 5871.68748713715,
+      "fullyProcessed": true,
+      "processedJobs": 2000
+    },
+    {
+      "name": "queue_stress",
+      "requests": 1000,
+      "concurrency": 50,
+      "queueConcurrency": 1,
+      "workerDelayMs": 3,
+      "successes": 1000,
+      "failures": 0,
+      "successRate": 1,
+      "ackLatencyMs": {
+        "min": 0.38170800000000327,
+        "p50": 4.3214585000000625,
+        "p95": 24.59307289999999,
+        "p99": 72.63471834,
+        "max": 82.631125,
+        "avg": 7.123789246999996
+      },
+      "dispatchDurationMs": 144.614375,
+      "totalDurationMs": 3434.421417,
+      "queueDrainAfterDispatchMs": 3289.8070420000004,
+      "ackThroughputRps": 6914.941892878907,
+      "fullyProcessed": true,
+      "processedJobs": 1000
+    }
+  ]
+}

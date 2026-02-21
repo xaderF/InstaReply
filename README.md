@@ -8,10 +8,12 @@ Instagram DM auto-responder MVP built with Node.js, TypeScript, Fastify, Prisma,
 - Webhook route validates `X-Hub-Signature-256` and immediately returns `200 OK`.
 - Events are pushed to an in-memory async queue for background processing.
 - Worker persists `RawEvent`, `Thread`, and dedupe-safe inbound `Message`.
-- Draft generation runs with rules-first fallback to OpenAI LLM.
+- Worker maps sender to a contact segment (`FRIEND`, `KNOWN`, `STRANGER`, `VIP`).
+- Per-segment policy controls auto-send, human approval, and optional custom template.
+- Draft generation runs with policy template override, otherwise rules-first fallback to OpenAI LLM.
 - Safety guardrails decide whether to auto-send or skip.
 - Outbound messages are sent via Meta Graph API and logged in `DeliveryLog`.
-- Optional `/admin` page lists latest inbound messages and lets you send drafts manually.
+- `/admin` page lets you manage segment labels/policies and send drafts manually.
 
 ## Key Properties
 
@@ -22,27 +24,27 @@ Instagram DM auto-responder MVP built with Node.js, TypeScript, Fastify, Prisma,
 ## Repo Structure
 
 ```text
-instareply/
-  apps/server/
-    src/
-      index.ts
-      routes/webhook.ts
-      routes/admin.ts
-      services/ig.ts
-      services/llm.ts
-      services/rules.ts
-      db/prisma.ts
-      utils/verifySignature.ts
-      queue/inMemoryQueue.ts
-      types/meta.ts
-      types/llm.ts
-      config/env.ts
-  prisma/
-    schema.prisma
-  .env.example
-  README.md
-  package.json
-  tsconfig.json
+apps/server/
+  src/
+    index.ts
+    routes/webhook.ts
+    routes/admin.ts
+    services/ig.ts
+    services/llm.ts
+    services/rules.ts
+    services/policy.ts
+    db/prisma.ts
+    utils/verifySignature.ts
+    queue/inMemoryQueue.ts
+    types/meta.ts
+    types/llm.ts
+    config/env.ts
+prisma/
+  schema.prisma
+.env.example
+README.md
+package.json
+tsconfig.json
 ```
 
 ## Required Environment Variables
@@ -107,4 +109,6 @@ Copy `.env.example` to `.env` and set:
 - `GET /health`
 - `POST /webhook/instagram`
 - `GET /admin`
+- `POST /admin/contact-segment`
+- `POST /admin/policy`
 - `POST /admin/send`

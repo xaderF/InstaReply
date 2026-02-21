@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-02-21T22:21:55.558Z",
+  "preset": "quick",
+  "results": [
+    {
+      "name": "quick",
+      "requests": 200,
+      "concurrency": 20,
+      "queueConcurrency": 1,
+      "workerDelayMs": 0,
+      "successes": 200,
+      "failures": 0,
+      "successRate": 1,
+      "ackLatencyMs": {
+        "min": 1.3414589999999862,
+        "p50": 3.3742499999999893,
+        "p95": 33.62014439999995,
+        "p99": 43.928833920000024,
+        "max": 46.739124999999945,
+        "avg": 7.132046699999998
+      },
+      "dispatchDurationMs": 87.07191600000004,
+      "totalDurationMs": 87.12662499999999,
+      "queueDrainAfterDispatchMs": 0.05470899999994572,
+      "ackThroughputRps": 2296.9518667764232,
+      "fullyProcessed": true,
+      "processedJobs": 200
+    }
+  ]
+}

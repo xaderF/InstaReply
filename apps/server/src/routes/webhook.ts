@@ -1,9 +1,15 @@
-import { MessageDirection, Prisma, PrismaClient } from "@prisma/client";
+import {
+  ContactSegment,
+  MessageDirection,
+  Prisma,
+  PrismaClient
+} from "@prisma/client";
 import { FastifyBaseLogger, FastifyInstance } from "fastify";
 import { Env } from "../config/env";
 import { InMemoryQueue } from "../queue/inMemoryQueue";
 import { IgService } from "../services/ig";
 import { LlmService } from "../services/llm";
+import { ensurePolicy } from "../services/policy";
 import { RulesService } from "../services/rules";
 import { ParsedWebhookJob, MetaMessagingEvent, MetaWebhookPayload } from "../types/meta";
 import { verifySignature } from "../utils/verifySignature";
@@ -113,8 +119,25 @@ export function createWebhookWorker(deps: WorkerDeps) {
       return;
     }
 
-    const rulesDraft = deps.rules.generateDraft(job.text);
-    const draft = rulesDraft ?? (await deps.llm.generateDraft(job.text));
+    const contact = await deps.prisma.contact.upsert({
+      where: { senderIgId: job.senderId },
+      update: {},
+      create: {
+        senderIgId: job.senderId,
+        segment: ContactSegment.STRANGER
+      }
+    });
+
+    const policy = await ensurePolicy(deps.prisma, contact.segment);
+
+    const draft = policy.template?.trim()
+      ? {
+          intent: "general_question" as const,
+          confidence: 0.99,
+          reply: policy.template.trim(),
+          needs_human_approval: false
+        }
+      : deps.rules.generateDraft(job.text) ?? (await deps.llm.generateDraft(job.text));
 
     await deps.prisma.message.update({
       where: { id: inbound.id },
@@ -125,6 +148,24 @@ export function createWebhookWorker(deps: WorkerDeps) {
         needsHumanApproval: draft.needs_human_approval
       }
     });
+
+    if (!policy.autoSend) {
+      await createSkipLog(
+        deps.prisma,
+        inbound.id,
+        `Policy: auto-send disabled for segment ${contact.segment}`
+      );
+      return;
+    }
+
+    if (policy.requireHumanApproval) {
+      await createSkipLog(
+        deps.prisma,
+        inbound.id,
+        `Policy: human approval required for segment ${contact.segment}`
+      );
+      return;
+    }
 
     if (draft.confidence < 0.6 || draft.needs_human_approval) {
       await createSkipLog(

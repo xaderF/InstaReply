@@ -32,7 +32,7 @@ export class InMemoryQueue<T> {
 
     while (this.inFlight < this.concurrency && this.queue.length > 0) {
       const job = this.queue.shift();
-      if (!job) continue;
+      if (job === undefined) continue;
 
       this.inFlight += 1;
 

@@ -48,7 +48,33 @@ model RawEvent {
   receivedAt  DateTime @default(now())
 }
 
+model Contact {
+  id         String         @id @default(cuid())
+  senderIgId String         @unique
+  segment    ContactSegment @default(STRANGER)
+  notes      String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+}
+
+model ReplyPolicy {
+  id                   String         @id @default(cuid())
+  segment              ContactSegment @unique
+  autoSend             Boolean        @default(false)
+  requireHumanApproval Boolean        @default(true)
+  template             String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+}
+
 enum MessageDirection {
   IN
   OUT
+}
+
+enum ContactSegment {
+  FRIEND
+  KNOWN
+  STRANGER
+  VIP
 }
