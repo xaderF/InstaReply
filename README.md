@@ -1,110 +1,151 @@
-# InstaReply MVP
+# InstaReply
 
-Instagram DM auto-responder MVP built with Node.js, TypeScript, Fastify, Prisma, and PostgreSQL.
+Instagram DM auto-responder MVP built to demonstrate practical backend + LLM integration skills for internships/co-op recruiting.
 
-## Architecture Overview
+This is intentionally an MVP, not a production-ready SaaS.
 
-- Fastify webhook endpoint receives Meta Instagram DM events.
-- Webhook route validates `X-Hub-Signature-256` and immediately returns `200 OK`.
-- Events are pushed to an in-memory async queue for background processing.
-- Worker persists `RawEvent`, `Thread`, and dedupe-safe inbound `Message`.
-- Worker maps sender to a contact segment (`FRIEND`, `KNOWN`, `STRANGER`, `VIP`).
-- Per-segment policy controls auto-send, human approval, and optional custom template.
-- Draft generation runs with policy template override, otherwise rules-first fallback to OpenAI LLM.
-- Safety guardrails decide whether to auto-send or skip.
-- Outbound messages are sent via Meta Graph API and logged in `DeliveryLog`.
-- `/admin` page lets you manage segment labels/policies and send drafts manually.
+## What This Project Demonstrates
 
-## Key Properties
+- Secure webhook ingestion with HMAC verification (`X-Hub-Signature-256`)
+- Async queue-based processing (fast webhook ACK + background work)
+- Idempotent persistence with Prisma + PostgreSQL
+- Rule-first reply drafting with OpenAI fallback
+- Segment-based automation policies (`FRIEND`, `KNOWN`, `STRANGER`, `VIP`)
+- Admin panel for contact segmentation, policy tuning, and manual send
 
-- Webhook-driven ingestion with retry-safe idempotent processing
-- Structured LLM outputs (JSON) + validation for deterministic behavior
-- Persisted conversation state + delivery metrics for observability
+## Stack
 
-## Repo Structure
+- Node.js + TypeScript
+- Fastify
+- Prisma + PostgreSQL
+- OpenAI API (`chat.completions`)
+- Meta Graph API (Instagram outbound messaging)
 
-```text
-apps/server/
-  src/
-    index.ts
-    routes/webhook.ts
-    routes/admin.ts
-    services/ig.ts
-    services/llm.ts
-    services/rules.ts
-    services/policy.ts
-    db/prisma.ts
-    utils/verifySignature.ts
-    queue/inMemoryQueue.ts
-    types/meta.ts
-    types/llm.ts
-    config/env.ts
-prisma/
-  schema.prisma
-.env.example
-README.md
-package.json
-tsconfig.json
+## Verified Status (February 24, 2026)
+
+The following checks were run in this repo:
+
+- `npm run test` -> 13/13 passing
+- `npm run build` -> passes
+- `npm run prisma:generate` -> passes
+- `npm run perf:webhook` -> passes (quick benchmark)
+- Server smoke check: `GET /health` returns `{"ok":true}`
+
+## Prerequisites
+
+- Node.js 20+ (tested with Node 25.3.0)
+- npm
+- PostgreSQL 14+
+- Optional: `ngrok` if you want external webhook callbacks into local dev
+
+## Environment Variables
+
+Copy `.env.example` to `.env`:
+
+```bash
+cp .env.example .env
 ```
 
-## Required Environment Variables
+Set these values:
 
-Copy `.env.example` to `.env` and set:
+- `PORT` - local server port
+- `DATABASE_URL` - PostgreSQL connection string
+- `APP_SECRET` - Meta app secret (also used for local signature testing)
+- `META_ACCESS_TOKEN` - Meta token for sending outbound Instagram messages
+- `META_IG_BUSINESS_ACCOUNT_ID` - IG business account ID
+- `LLM_PROVIDER` - currently only `openai`
+- `OPENAI_API_KEY` - OpenAI API key
+- `OPENAI_MODEL` - default `gpt-4.1-mini`
 
-- `PORT`
-- `DATABASE_URL`
-- `APP_SECRET`
-- `META_ACCESS_TOKEN`
-- `META_IG_BUSINESS_ACCOUNT_ID`
-- `LLM_PROVIDER` (`openai`)
-- `OPENAI_API_KEY`
-- `OPENAI_MODEL`
+Note: for local-only testing without real Meta/OpenAI calls, values can be placeholders except `DATABASE_URL` must point to a working local Postgres instance.
 
-## Local Run (with ngrok)
+## Local Setup
 
 1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Generate Prisma client:
-   ```bash
-   npm run prisma:generate
-   ```
-3. Run migrations:
-   ```bash
-   npm run prisma:migrate
-   ```
-4. Start server:
-   ```bash
-   npm run dev
-   ```
-5. Expose local server:
-   ```bash
-   ngrok http 3000
-   ```
-6. Configure Meta webhook callback URL to:
-   `https://<ngrok-id>.ngrok.io/webhook/instagram`
+```bash
+npm install
+```
 
-## Scripts
+2. Start Postgres (example with Docker):
+```bash
+docker run --name instareply-postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=instareply \
+  -p 5432:5432 \
+  -d postgres:16
+```
+
+3. Sync schema and generate Prisma client:
+```bash
+npx prisma db push
+npm run prisma:generate
+```
+
+4. Start the server:
+```bash
+npm run dev
+```
+
+5. Smoke test:
+```bash
+curl http://localhost:3000/health
+```
+
+6. Open admin UI:
+`http://localhost:3000/admin`
+
+## How To Test Locally
+
+### 1) Automated checks
+
+```bash
+npm run test
+npm run build
+npm run perf:webhook
+```
+
+### 2) Manual webhook simulation (no Meta dashboard needed)
+
+1. Keep server running locally.
+2. Export your app secret from `.env`:
+```bash
+export APP_SECRET='your_meta_app_secret'
+```
+3. Send a signed Instagram-style webhook event:
+```bash
+BODY='{"object":"instagram","entry":[{"id":"ig_biz","messaging":[{"sender":{"id":"user_123"},"recipient":{"id":"ig_biz"},"timestamp":1700000000000,"conversation":{"id":"thread_user_123"},"message":{"mid":"mid_local_001","text":"How much does this cost?"}}]}]}'
+SIG=$(printf '%s' "$BODY" | openssl dgst -sha256 -hmac "$APP_SECRET" -hex | awk '{print $NF}')
+
+curl -i http://localhost:3000/webhook/instagram \
+  -H "content-type: application/json" \
+  -H "x-hub-signature-256: sha256=$SIG" \
+  -d "$BODY"
+```
+
+4. Open `/admin` and confirm the inbound message and suggested reply were recorded.
+
+Tip: If you do not want outbound API calls during local testing, set `STRANGER` policy `Auto send` off in `/admin` before sending events.
+
+## Running Against Real Meta Webhooks
+
+1. Run app locally: `npm run dev`
+2. Expose with ngrok: `ngrok http 3000`
+3. Configure Meta callback URL to:
+`https://<your-ngrok-id>.ngrok.io/webhook/instagram`
+4. Send real DMs and monitor `/admin` + logs
+
+## NPM Scripts
 
 - `npm run dev` - start dev server with watch mode
-- `npm run build` - compile TypeScript
-- `npm run start` - run compiled app
-- `npm run prisma:migrate` - run Prisma migrations
+- `npm run build` - compile TypeScript into `dist/`
+- `npm run start` - run compiled server
+- `npm run test` - run Node test suite via `tsx`
+- `npm run prisma:migrate` - run Prisma migrate dev
 - `npm run prisma:generate` - generate Prisma client
+- `npm run perf:webhook` - run quick webhook benchmark
+- `npm run perf:webhook:resume` - run multi-scenario benchmark and save report
 
-## Deploy Notes (Render)
-
-1. Create a Render Web Service from this repository.
-2. Set build command: `npm install && npm run prisma:generate && npm run build`
-3. Set start command: `npm run start`
-4. Add a Render PostgreSQL instance and set `DATABASE_URL`.
-5. Set env vars from `.env.example`.
-6. Run `npm run prisma:migrate` once (Render shell or CI step) before traffic.
-7. Configure Meta webhook URL to your Render service URL:
-   `https://<your-render-service>/webhook/instagram`
-
-## Endpoints
+## API Endpoints
 
 - `GET /health`
 - `POST /webhook/instagram`
@@ -112,3 +153,25 @@ Copy `.env.example` to `.env` and set:
 - `POST /admin/contact-segment`
 - `POST /admin/policy`
 - `POST /admin/send`
+
+## Repo Layout
+
+```text
+apps/server/src/
+  config/env.ts
+  db/prisma.ts
+  queue/inMemoryQueue.ts
+  routes/admin.ts
+  routes/webhook.ts
+  services/{ig,llm,policy,rules}.ts
+  utils/verifySignature.ts
+prisma/schema.prisma
+scripts/perf/webhookBench.ts
+tests/
+```
+
+## Current Limitations
+
+- In-memory queue only (no durable broker)
+- No auth around `/admin`
+- Designed as a backend MVP for portfolio/demo use
