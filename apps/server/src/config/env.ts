@@ -7,8 +7,11 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   DATABASE_URL: z.string().min(1),
   APP_SECRET: z.string().min(1),
-  META_ACCESS_TOKEN: z.string().min(1),
-  META_IG_BUSINESS_ACCOUNT_ID: z.string().min(1),
+  META_ACCESS_TOKEN: z.string().default(""),
+  META_IG_BUSINESS_ACCOUNT_ID: z.string().default(""),
+  META_APP_ID: z.string().default(""),
+  META_APP_SECRET: z.string().default(""),
+  META_APP_REDIRECT_URI: z.string().default(""),
   LLM_PROVIDER: z.enum(["openai"]).default("openai"),
   OPENAI_API_KEY: z.string().min(1),
   OPENAI_MODEL: z.string().default("gpt-4.1-mini")
@@ -20,6 +23,9 @@ export type Env = {
   appSecret: string;
   metaAccessToken: string;
   metaIgBusinessAccountId: string;
+  metaAppId: string;
+  metaAppSecret: string;
+  metaAppRedirectUri: string;
   llmProvider: "openai";
   openaiApiKey: string;
   openaiModel: string;
@@ -33,6 +39,9 @@ export const env: Env = {
   appSecret: parsed.APP_SECRET,
   metaAccessToken: parsed.META_ACCESS_TOKEN,
   metaIgBusinessAccountId: parsed.META_IG_BUSINESS_ACCOUNT_ID,
+  metaAppId: parsed.META_APP_ID,
+  metaAppSecret: parsed.META_APP_SECRET,
+  metaAppRedirectUri: parsed.META_APP_REDIRECT_URI,
   llmProvider: parsed.LLM_PROVIDER,
   openaiApiKey: parsed.OPENAI_API_KEY,
   openaiModel: parsed.OPENAI_MODEL

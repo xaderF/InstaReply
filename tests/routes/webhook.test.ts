@@ -24,6 +24,9 @@ function createEnv(appSecret: string): Env {
     appSecret,
     metaAccessToken: "token",
     metaIgBusinessAccountId: "ig_biz_id",
+    metaAppId: "",
+    metaAppSecret: "",
+    metaAppRedirectUri: "",
     llmProvider: "openai",
     openaiApiKey: "openai_key",
     openaiModel: "gpt-4.1-mini"

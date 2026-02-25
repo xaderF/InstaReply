@@ -238,6 +238,9 @@ function createBenchmarkEnv(appSecret: string): Env {
     appSecret,
     metaAccessToken: "benchmark_token",
     metaIgBusinessAccountId: "benchmark_ig_account",
+    metaAppId: "",
+    metaAppSecret: "",
+    metaAppRedirectUri: "",
     llmProvider: "openai",
     openaiApiKey: "benchmark_openai_key",
     openaiModel: "gpt-4.1-mini"

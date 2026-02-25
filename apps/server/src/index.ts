@@ -5,6 +5,7 @@ import { env } from "./config/env";
 import { prisma } from "./db/prisma";
 import { InMemoryQueue } from "./queue/inMemoryQueue";
 import { registerAdminRoutes } from "./routes/admin";
+import { registerFrontendRoutes } from "./routes/app";
 import { createWebhookWorker, registerWebhookRoutes } from "./routes/webhook";
 import { InstagramGraphService } from "./services/ig";
 import { createLlmService } from "./services/llm";
@@ -34,7 +35,19 @@ async function bootstrap(): Promise<void> {
   const ig = new InstagramGraphService({
     accessToken: env.metaAccessToken,
     businessAccountId: env.metaIgBusinessAccountId,
-    logger: app.log
+    logger: app.log,
+    resolveCredentials: async () => {
+      const connected = await prisma.instagramConnection.findFirst({
+        where: { status: "CONNECTED" },
+        orderBy: { updatedAt: "desc" }
+      });
+
+      return {
+        accessToken: connected?.accessToken ?? env.metaAccessToken,
+        businessAccountId:
+          connected?.igBusinessAccountId ?? env.metaIgBusinessAccountId
+      };
+    }
   });
 
   queue.start(
@@ -49,11 +62,19 @@ async function bootstrap(): Promise<void> {
   );
 
   app.get("/health", async () => ({ ok: true }));
+  app.get("/", async (_request, reply) => reply.redirect("/app-react"));
 
   registerWebhookRoutes(app, {
     env,
     logger: app.log,
     queue
+  });
+
+  registerFrontendRoutes(app, {
+    prisma,
+    ig,
+    env,
+    logger: app.log
   });
 
   registerAdminRoutes(app, {

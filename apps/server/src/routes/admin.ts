@@ -133,6 +133,7 @@ export function registerAdminRoutes(
         </head>
         <body>
           <h1>InstaReply Admin</h1>
+          <p><a href="/app">Open frontend console</a></p>
           <h2>Segment Policies</h2>
           <p>Set auto-send behavior and optional template per audience segment.</p>
           <table>

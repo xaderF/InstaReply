@@ -67,6 +67,21 @@ model ReplyPolicy {
   updatedAt            DateTime       @updatedAt
 }
 
+model InstagramConnection {
+  id                  String           @id @default(cuid())
+  status              ConnectionStatus @default(DISCONNECTED)
+  pageId              String?
+  pageName            String?
+  igBusinessAccountId String?
+  accessToken         String?
+  tokenType           String?
+  scope               String?
+  lastError           String?
+  connectedAt         DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+}
+
 enum MessageDirection {
   IN
   OUT
@@ -77,4 +92,10 @@ enum ContactSegment {
   KNOWN
   STRANGER
   VIP
+}
+
+enum ConnectionStatus {
+  DISCONNECTED
+  CONNECTED
+  ERROR
 }

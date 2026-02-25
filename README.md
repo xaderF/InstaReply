@@ -11,7 +11,7 @@ This is intentionally an MVP, not a production-ready SaaS.
 - Idempotent persistence with Prisma + PostgreSQL
 - Rule-first reply drafting with OpenAI fallback
 - Segment-based automation policies (`FRIEND`, `KNOWN`, `STRANGER`, `VIP`)
-- Admin panel for contact segmentation, policy tuning, and manual send
+- Frontend console (`/app`) for Instagram connection + policy/contact/reply controls
 
 ## Stack
 
@@ -53,6 +53,9 @@ Set these values:
 - `APP_SECRET` - Meta app secret (also used for local signature testing)
 - `META_ACCESS_TOKEN` - Meta token for sending outbound Instagram messages
 - `META_IG_BUSINESS_ACCOUNT_ID` - IG business account ID
+- `META_APP_ID` - Meta app ID (required for OAuth connect button)
+- `META_APP_SECRET` - Meta app secret for OAuth token exchange
+- `META_APP_REDIRECT_URI` - optional explicit OAuth callback URL
 - `LLM_PROVIDER` - currently only `openai`
 - `OPENAI_API_KEY` - OpenAI API key
 - `OPENAI_MODEL` - default `gpt-4.1-mini`
@@ -91,8 +94,11 @@ npm run dev
 curl http://localhost:3000/health
 ```
 
-6. Open admin UI:
-`http://localhost:3000/admin`
+6. Open React frontend console:
+`http://localhost:3000/app-react`
+
+Legacy server-rendered console is still available at:
+`http://localhost:3000/app`
 
 ## How To Test Locally
 
@@ -122,9 +128,9 @@ curl -i http://localhost:3000/webhook/instagram \
   -d "$BODY"
 ```
 
-4. Open `/admin` and confirm the inbound message and suggested reply were recorded.
+4. Open `/app-react` and confirm the inbound message and suggested reply were recorded.
 
-Tip: If you do not want outbound API calls during local testing, set `STRANGER` policy `Auto send` off in `/admin` before sending events.
+Tip: If you do not want outbound API calls during local testing, set `STRANGER` policy `Auto send` off in `/app-react` before sending events.
 
 ## Running Against Real Meta Webhooks
 
@@ -132,7 +138,7 @@ Tip: If you do not want outbound API calls during local testing, set `STRANGER` 
 2. Expose with ngrok: `ngrok http 3000`
 3. Configure Meta callback URL to:
 `https://<your-ngrok-id>.ngrok.io/webhook/instagram`
-4. Send real DMs and monitor `/admin` + logs
+4. Send real DMs and monitor `/app-react` + logs
 
 ## NPM Scripts
 
@@ -148,6 +154,20 @@ Tip: If you do not want outbound API calls during local testing, set `STRANGER` 
 ## API Endpoints
 
 - `GET /health`
+- `GET /`
+- `GET /app`
+- `GET /app-react`
+- `GET /app-react/static/reactConsole.js`
+- `POST /app/connection/manual`
+- `POST /app/connection/disconnect`
+- `GET /api/app/state`
+- `POST /api/app/connection/manual`
+- `POST /api/app/connection/disconnect`
+- `POST /api/app/contact-segment`
+- `POST /api/app/policy`
+- `POST /api/app/send`
+- `GET /oauth/meta/start`
+- `GET /oauth/meta/callback`
 - `POST /webhook/instagram`
 - `GET /admin`
 - `POST /admin/contact-segment`
